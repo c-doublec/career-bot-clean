@@ -1,1 +1,2 @@
-streamlit
+streamlit==1.32.2
+azure-ai-textanalytics==5.3.0
