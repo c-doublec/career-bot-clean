@@ -1,4 +1,6 @@
 # career_bot_app.py
+# Trigger redeploy on Azure
+
 import os
 import streamlit as st
 from azure.core.credentials import AzureKeyCredential
