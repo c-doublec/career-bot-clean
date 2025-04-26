@@ -52,30 +52,37 @@ cv_key = os.getenv("AZURE_CV_KEY")
 text_input = st.text_input("Tell me about your skills, interests, or goals:")
 
 # 🎙️ Azure Speech-to-Text
-st.subheader("🎙️ Voice Input")
-if st.button("🎧 Start Recording (speech-to-text)"):
-    if os.getenv("AZURE_SPEECH_KEY") and os.getenv("AZURE_SPEECH_REGION"):
-        try:
-            speech_config = speechsdk.SpeechConfig(
-                subscription=os.getenv("AZURE_SPEECH_KEY"),
-                region=os.getenv("AZURE_SPEECH_REGION")
-            )
-            speech_config.speech_recognition_language = "en-US"
-            recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config)
+# Check if running inside Azure App Service (no microphone)
+running_in_azure = os.getenv('WEBSITE_SITE_NAME') is not None
 
-            st.info("Listening... Speak now.")
-            result = recognizer.recognize_once()
+if not running_in_azure:
+    st.subheader("🎙️ Voice Input")
+    if st.button("🎧 Start Recording (speech-to-text)"):
+        if os.getenv("AZURE_SPEECH_KEY") and os.getenv("AZURE_SPEECH_REGION"):
+            try:
+                speech_config = speechsdk.SpeechConfig(
+                    subscription=os.getenv("AZURE_SPEECH_KEY"),
+                    region=os.getenv("AZURE_SPEECH_REGION")
+                )
+                speech_config.speech_recognition_language = "en-US"
+                recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config)
 
-            if result.reason == speechsdk.ResultReason.RecognizedSpeech:
-                st.success(f"🗣️ You said: {result.text}")
-                text_input += " " + result.text
-            else:
-                st.warning(f"Speech not recognized: {result.reason}")
+                st.info("Listening... Speak now.")
+                result = recognizer.recognize_once()
 
-        except Exception as e:
-            st.error(f"Speech recognition error: {str(e)}")
-    else:
-        st.error("Speech service credentials are not set.")
+                if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+                    st.success(f"🗣️ You said: {result.text}")
+                    text_input += " " + result.text
+                else:
+                    st.warning(f"Speech not recognized: {result.reason}")
+
+            except Exception as e:
+                st.error(f"Speech recognition error: {str(e)}")
+        else:
+            st.error("Speech service credentials are not set.")
+else:
+    st.subheader("🎙️ Voice Input (Unavailable on Azure Deployment)")
+    st.info("Voice input is available when running locally, but not in Azure deployment.")
 
 # File uploader
 uploaded_file = st.file_uploader("Or upload an image (e.g., poster or brochure) to extract text:", type=["png", "jpg", "jpeg"])
