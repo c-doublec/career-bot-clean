@@ -10,7 +10,7 @@ from azure.cognitiveservices.vision.computervision import ComputerVisionClient
 from azure.cognitiveservices.vision.computervision.models import OperationStatusCodes
 from azure.cognitiveservices.speech import SpeechConfig, SpeechRecognizer, AudioConfig, ResultReason
 from msrest.authentication import CognitiveServicesCredentials
-from openai.error import RateLimitError
+
 
 # Load environment variables
 load_dotenv()
@@ -48,19 +48,24 @@ def recommend_career(phrases):
 # --- Functions ---
 def get_career_suggestions(prompt_text):
     try:
-        response = openai.ChatCompletion.create(
-            deployment_id=deployment_name,
+        client = AzureOpenAI(
+            azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+            api_key=os.getenv("AZURE_OPENAI_KEY"),
+            api_version=os.getenv("AZURE_OPENAI_API_VERSION")
+        )
+        response = client.chat.completions.create(
+            model=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
             messages=[
                 {"role": "system", "content": "You are a helpful career advisor assistant."},
                 {"role": "user", "content": f"Suggest suitable career paths based on: {prompt_text}"}
             ]
         )
         return response.choices[0].message.content
-    except RateLimitError:
-        return "⚠️ GPT Rate Limit Reached: Please wait a minute and try again."
+    except openai.RateLimitError as e:
+        st.error(f"⚠️ GPT Rate Limit Error: {str(e)}")
     except Exception as e:
-        return f"⚠️ GPT Error: {str(e)}"
-
+        st.error(f"⚠️ GPT General Error: {str(e)}")
+        
 # --- Streamlit App ---
 st.set_page_config(page_title="Career Recommender with Azure AI Services", page_icon="🎯")
 st.title("🎯 Career Recommender with Azure AI Services")
